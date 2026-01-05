@@ -1,9 +1,30 @@
 package limiter
 
+import "time"
+
 type Namespace string
 
-// Identity uniquely identifies the subject being rate-limited.
+// Identity uniquely identifies the subject being rate-limited (for example,
+// a user ID, an API key, or an IP address).
 type Identity struct {
 	Namespace Namespace
 	Key       string
+}
+
+// Limit defines a token-bucket policy.
+//
+// Rate is measured as tokens per Period. Burst is the maximum token capacity of
+// the bucket and controls how many requests can be allowed immediately.
+type Limit struct {
+	Rate   int64
+	Period time.Duration
+	Burst  int64
+}
+
+// Decision is the result of a rate-limit check.
+type Decision struct {
+	Allow      bool
+	Remaining  int64
+	RetryAfter time.Duration
+	ResetTime  time.Time
 }

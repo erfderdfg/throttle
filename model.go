@@ -1,6 +1,9 @@
 package limiter
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Namespace string
 
@@ -27,4 +30,9 @@ type Decision struct {
 	Remaining  int64
 	RetryAfter time.Duration
 	ResetTime  time.Time
+}
+
+// RateLimiter performs token-bucket admission control.
+type RateLimiter interface {
+	Allow(ctx context.Context, id Identity, limit Limit) (Decision, error)
 }

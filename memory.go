@@ -1,6 +1,7 @@
 package limiter
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -25,4 +26,13 @@ func NewMemoryLimiter() *MemoryLimiter {
 	return &MemoryLimiter{
 		buckets: make(map[string]*state),
 	}
+}
+
+// Allow checks whether a request for the given identity should be allowed under
+// the provided limit. Each call has a fixed cost of 1 token.
+func (m *MemoryLimiter) Allow(ctx context.Context, id Identity, limit Limit) (Decision, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// TODO: implement token bucket logic
+	return Decision{}, nil
 }

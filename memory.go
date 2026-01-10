@@ -33,6 +33,22 @@ func NewMemoryLimiter() *MemoryLimiter {
 func (m *MemoryLimiter) Allow(ctx context.Context, id Identity, limit Limit) (Decision, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	// TODO: implement token bucket logic
+
+	now := time.Now()
+	key := string(id.Namespace) + ":" + id.Key
+	_, exists := m.buckets[key]
+	if !exists {
+		m.buckets[key] = &state{
+			tokens:     float64(limit.Burst) - 1,
+			lastRefill: now,
+		}
+		return Decision{
+			Allow:      true,
+			Remaining:  limit.Burst - 1,
+			RetryAfter: 0,
+			ResetTime:  now,
+		}, nil
+	}
+	// TODO: refill existing bucket
 	return Decision{}, nil
 }

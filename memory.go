@@ -36,7 +36,7 @@ func (m *MemoryLimiter) Allow(ctx context.Context, id Identity, limit Limit) (De
 
 	now := time.Now()
 	key := string(id.Namespace) + ":" + id.Key
-	_, exists := m.buckets[key]
+	st, exists := m.buckets[key]
 	if !exists {
 		m.buckets[key] = &state{
 			tokens:     float64(limit.Burst) - 1,
@@ -49,6 +49,19 @@ func (m *MemoryLimiter) Allow(ctx context.Context, id Identity, limit Limit) (De
 			ResetTime:  now,
 		}, nil
 	}
-	// TODO: refill existing bucket
-	return Decision{}, nil
+
+	elapsed := now.Sub(st.lastRefill)
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	delta := float64(elapsed) / float64(limit.Period)
+	tokensToAdd := delta * float64(limit.Rate)
+	newBalance := st.tokens + tokensToAdd
+	if newBalance > float64(limit.Burst) {
+		newBalance = float64(limit.Burst)
+	}
+	st.tokens = newBalance
+	st.lastRefill = now
+	// TODO: allow/deny check
+	return Decision{Allow: true, Remaining: int64(st.tokens), ResetTime: now}, nil
 }

@@ -23,3 +23,24 @@ func TestMemoryLimiter_Allow_Basics(t *testing.T) {
 		t.Logf("Expected 9 remaining tokens got %d instead!", decision.Remaining)
 	}
 }
+
+func TestMemoryLimiter_Exhaustion(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	limiter := NewMemoryLimiter()
+
+	limit := Limit{Rate: 1, Period: time.Second, Burst: 5}
+	id := Identity{Namespace: "test", Key: "user_1"}
+
+	for i := 0; i < 5; i++ {
+		dec, _ := limiter.Allow(ctx, id, limit)
+		if !dec.Allow {
+			t.Fatalf("Request %d was unexpectedly denied", i)
+		}
+	}
+
+	dec, _ := limiter.Allow(ctx, id, limit)
+	if dec.Allow {
+		t.Errorf("The 6th request should have been denied (Burst=5), but was allowed")
+	}
+}

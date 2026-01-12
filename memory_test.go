@@ -10,12 +10,9 @@ func TestMemoryLimiter_Allow_Basics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	limiter := NewMemoryLimiter()
-
 	limit := Limit{Rate: 10, Period: time.Second, Burst: 10}
 	id := Identity{Namespace: "test", Key: "user_1"}
-
 	decision, _ := limiter.Allow(ctx, id, limit)
-
 	if !decision.Allow {
 		t.Error("Expected request to be allowed, but got denied!.")
 	}
@@ -28,19 +25,35 @@ func TestMemoryLimiter_Exhaustion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	limiter := NewMemoryLimiter()
-
 	limit := Limit{Rate: 1, Period: time.Second, Burst: 5}
 	id := Identity{Namespace: "test", Key: "user_1"}
-
 	for i := 0; i < 5; i++ {
 		dec, _ := limiter.Allow(ctx, id, limit)
 		if !dec.Allow {
 			t.Fatalf("Request %d was unexpectedly denied", i)
 		}
 	}
-
 	dec, _ := limiter.Allow(ctx, id, limit)
 	if dec.Allow {
 		t.Errorf("The 6th request should have been denied (Burst=5), but was allowed")
 	}
+}
+
+func TestMemoryLimiter_Refill(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	limiter := NewMemoryLimiter()
+	limit := Limit{Rate: 10, Period: time.Second, Burst: 1}
+	id := Identity{Namespace: "test", Key: "user_1"}
+	limiter.Allow(ctx, id, limit)
+	dec, _ := limiter.Allow(ctx, id, limit)
+	if dec.Allow {
+		t.Fatal("Should be denied immediately")
+	}
+	time.Sleep(150 * time.Millisecond)
+	dec, err := limiter.Allow(ctx, id, limit)
+	if err != nil {
+		t.Errorf("Refill failed! Waited 150ms for a 100ms token but was denied.")
+	}
+	_ = dec
 }

@@ -17,6 +17,23 @@ local elapsed      = now - last_refill
 if elapsed < 0 then elapsed = 0 end
 local tokens_to_add = elapsed * rate
 tokens = tokens + tokens_to_add
+if tokens > capacity then tokens = capacity end
 
--- TODO: burst cap + allow/deny
-return {0, 0, "0", "0"}
+local allowed     = 0
+local remaining   = 0
+local retry_after = 0
+local reset_time  = 0
+
+if tokens >= cost then
+    tokens  = tokens - cost
+    allowed = 1
+    remaining = tokens
+    reset_time = now
+    redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+else
+    local needed = cost - tokens
+    retry_after  = needed / rate
+    reset_time   = now + retry_after
+end
+
+return {allowed, remaining, tostring(retry_after), tostring(reset_time)}

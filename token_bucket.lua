@@ -30,6 +30,8 @@ if tokens >= cost then
     remaining = tokens
     reset_time = now
     redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+    local ttl = math.ceil((capacity / rate) * 2)
+    redis.call('EXPIRE', key, ttl)
 else
     local needed = cost - tokens
     retry_after  = needed / rate

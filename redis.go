@@ -11,3 +11,10 @@ type limiterConfig struct {
 
 // Option configures a Redis-backed rate limiter.
 type Option func(*limiterConfig)
+
+// WithPrefix sets the Redis key prefix. Default is "limiter:".
+func WithPrefix(prefix string) Option {
+	return func(c *limiterConfig) {
+		c.prefix = prefix
+	}
+}

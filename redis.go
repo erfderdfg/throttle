@@ -1,6 +1,14 @@
 package limiter
 
-import "time"
+import (
+	_ "embed"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+)
+
+//go:embed token_bucket.lua
+var tokenBucketScript string
 
 // limiterConfig holds shared configuration for Redis-backed rate limiters.
 type limiterConfig struct {
@@ -25,4 +33,14 @@ func WithTimeout(timeout time.Duration) Option {
 // WithRecorder sets the metrics recorder. Default is NoOpMetricsRecorder.
 func WithRecorder(recorder MetricsRecorder) Option {
 	return func(c *limiterConfig) { c.recorder = recorder }
+}
+
+// RedisLimiter is a distributed rate limiter backed by Redis.
+//
+// It uses a Lua script to perform the token-bucket update atomically, which
+// allows multiple application instances to enforce a single shared limit.
+type RedisLimiter struct {
+	client    *redis.Client
+	scriptSHA string
+	limiterConfig
 }

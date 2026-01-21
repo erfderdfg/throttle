@@ -62,6 +62,11 @@ func NewRedisLimiter(client *redis.Client, opts ...Option) (*RedisLimiter, error
 	if err := client.Ping(ctx).Err(); err != nil {
 		return nil, err
 	}
-	// TODO: load Lua script
+
+	sha, err := client.ScriptLoad(ctx, tokenBucketScript).Result()
+	if err != nil {
+		return nil, err
+	}
+	l.scriptSHA = sha
 	return l, nil
 }

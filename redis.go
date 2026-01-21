@@ -70,3 +70,10 @@ func NewRedisLimiter(client *redis.Client, opts ...Option) (*RedisLimiter, error
 	l.scriptSHA = sha
 	return l, nil
 }
+
+// Allow checks whether a request for the given identity should be allowed under
+// the provided limit. Each call has a fixed cost of 1 token.
+func (r *RedisLimiter) Allow(ctx context.Context, id Identity, limit Limit) (Decision, error) {
+	// TODO: call Redis
+	return Decision{}, nil
+}

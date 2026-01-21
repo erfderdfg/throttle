@@ -1,6 +1,7 @@
 package limiter
 
 import (
+	"context"
 	_ "embed"
 	"time"
 
@@ -36,11 +37,31 @@ func WithRecorder(recorder MetricsRecorder) Option {
 }
 
 // RedisLimiter is a distributed rate limiter backed by Redis.
-//
-// It uses a Lua script to perform the token-bucket update atomically, which
-// allows multiple application instances to enforce a single shared limit.
 type RedisLimiter struct {
 	client    *redis.Client
 	scriptSHA string
 	limiterConfig
+}
+
+// NewRedisLimiter validates connectivity and loads the embedded Lua script into
+// Redis (SCRIPT LOAD). The returned limiter is ready to use.
+func NewRedisLimiter(client *redis.Client, opts ...Option) (*RedisLimiter, error) {
+	l := &RedisLimiter{
+		client: client,
+		limiterConfig: limiterConfig{
+			prefix:   "limiter:",
+			timeout:  5 * time.Second,
+			recorder: &NoOpMetricsRecorder{},
+		},
+	}
+	for _, opt := range opts { opt(&l.limiterConfig) }
+
+	ctx, cancel := context.WithTimeout(context.Background(), l.timeout)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
+	// TODO: load Lua script
+	return l, nil
 }

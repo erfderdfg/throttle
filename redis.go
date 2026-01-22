@@ -3,6 +3,8 @@ package limiter
 import (
 	"context"
 	_ "embed"
+	"errors"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -74,6 +76,43 @@ func NewRedisLimiter(client *redis.Client, opts ...Option) (*RedisLimiter, error
 // Allow checks whether a request for the given identity should be allowed under
 // the provided limit. Each call has a fixed cost of 1 token.
 func (r *RedisLimiter) Allow(ctx context.Context, id Identity, limit Limit) (Decision, error) {
-	// TODO: call Redis
-	return Decision{}, nil
+	key := r.prefix + string(id.Namespace) + ":" + id.Key
+	now := float64(time.Now().UnixMicro()) / 1e6
+	cost := 1.0
+	ratePerSecond := float64(limit.Rate) / limit.Period.Seconds()
+
+	result, err := r.client.EvalSha(ctx, r.scriptSHA, []string{key},
+		ratePerSecond, limit.Burst, now, cost,
+	).Result()
+	if err != nil {
+		return Decision{}, err
+	}
+
+	values, ok := result.([]interface{})
+	if !ok || len(values) != 4 {
+		return Decision{}, errors.New("invalid lua response format")
+	}
+
+	allowedVal    := int64(convertToFloat(values[0]))
+	remainingVal  := int64(convertToFloat(values[1]))
+	retryAfterF   := convertToFloat(values[2])
+	resetTimeF    := convertToFloat(values[3])
+
+	return Decision{
+		Allow:      allowedVal == 1,
+		Remaining:  remainingVal,
+		RetryAfter: time.Duration(retryAfterF * float64(time.Second)),
+		ResetTime:  time.UnixMicro(int64(resetTimeF * 1e6)),
+	}, nil
+}
+
+func convertToFloat(val interface{}) float64 {
+	switch v := val.(type) {
+	case int64:   return float64(v)
+	case float64: return v
+	case string:
+		f, _ := strconv.ParseFloat(v, 64)
+		return f
+	default:      return 0
+	}
 }

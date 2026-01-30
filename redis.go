@@ -48,7 +48,13 @@ func NewRedisLimiter(client *redis.Client, opts ...Option) (*RedisLimiter, error
 
 func (r *RedisLimiter) Allow(ctx context.Context, id Identity, limit Limit) (Decision, error) {
 	start := time.Now()
-	_ = start // record latency later
+
+	defer func() {
+		r.recorder.Observe("ratelimit.latency", time.Since(start).Seconds(), map[string]string{
+			"namespace": string(id.Namespace),
+			"status":    "ok",
+		})
+	}()
 
 	key := r.prefix + string(id.Namespace) + ":" + id.Key
 	now := float64(time.Now().UnixMicro()) / 1e6

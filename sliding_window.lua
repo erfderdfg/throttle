@@ -5,5 +5,8 @@ local now    = tonumber(ARGV[3])
 local cost   = tonumber(ARGV[4])
 local nonce  = ARGV[5]
 
--- TODO: implement sliding window
+local window_start = now - window
+redis.call('ZREMRANGEBYSCORE', key, '-inf', window_start)
+
+-- TODO: count and decide
 return {0, 0, "0", "0"}

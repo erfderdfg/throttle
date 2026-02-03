@@ -18,6 +18,8 @@ local reset_time  = 0.0
 if count + cost <= limit then
 	local member = tostring(now) .. ':' .. nonce
 	redis.call('ZADD', key, now, member)
+	local ttl = math.ceil(window) + 1
+	redis.call('EXPIRE', key, ttl)
 	allowed   = 1
 	remaining = limit - count - cost
 	reset_time = now

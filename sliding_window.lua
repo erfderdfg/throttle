@@ -16,12 +16,19 @@ local retry_after = 0.0
 local reset_time  = 0.0
 
 if count + cost <= limit then
-	-- TODO: record and return
+	local member = tostring(now) .. ':' .. nonce
+	redis.call('ZADD', key, now, member)
 	allowed   = 1
 	remaining = limit - count - cost
 	reset_time = now
 else
-	allowed = 0
+	local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+	if #oldest >= 2 then
+		local oldest_time = tonumber(oldest[2])
+		retry_after = (oldest_time + window) - now
+		if retry_after < 0 then retry_after = 0 end
+	end
+	reset_time = now + retry_after
 end
 
 return {allowed, remaining, tostring(retry_after), tostring(reset_time)}

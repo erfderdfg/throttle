@@ -43,3 +43,10 @@ func NewSlidingWindowLimiter(client *redis.Client, opts ...Option) (*SlidingWind
 	l.scriptSHA = sha
 	return l, nil
 }
+
+// Allow checks whether a request for the given identity should be allowed within
+// the rolling window defined by limit.Period.
+func (l *SlidingWindowLimiter) Allow(ctx context.Context, id Identity, limit Limit) (Decision, error) {
+	// TODO: call EvalSha with sliding window args
+	return Decision{}, nil
+}

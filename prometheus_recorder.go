@@ -1,6 +1,8 @@
 package limiter
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 // PrometheusRecorder implements MetricsRecorder using Prometheus counters and
 // histograms. Inject it via WithRecorder to expose per-namespace allow/deny
@@ -31,6 +33,7 @@ func NewPrometheusRecorder(reg prometheus.Registerer) *PrometheusRecorder {
 			Buckets: []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05},
 		}, []string{"namespace", "status"}),
 	}
+
 	reg.MustRegister(r.callsTotal, r.errorsTotal, r.latency)
 	return r
 }
@@ -40,11 +43,23 @@ func (p *PrometheusRecorder) Add(name string, value float64, tags map[string]str
 	switch name {
 	case "ratelimit.call":
 		p.callsTotal.With(prometheus.Labels{
-			"namespace": tags["namespace"], "status": tags["status"],
+			"namespace": tags["namespace"],
+			"status":    tags["status"],
 		}).Add(value)
 	case "ratelimit.errors":
 		p.errorsTotal.With(prometheus.Labels{
-			"namespace": tags["namespace"], "type": tags["type"],
+			"namespace": tags["namespace"],
+			"type":      tags["type"],
 		}).Add(value)
+	}
+}
+
+// Observe records a histogram sample. Recognised names: "ratelimit.latency".
+func (p *PrometheusRecorder) Observe(name string, value float64, tags map[string]string) {
+	if name == "ratelimit.latency" {
+		p.latency.With(prometheus.Labels{
+			"namespace": tags["namespace"],
+			"status":    tags["status"],
+		}).Observe(value)
 	}
 }

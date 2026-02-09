@@ -34,3 +34,17 @@ func NewPrometheusRecorder(reg prometheus.Registerer) *PrometheusRecorder {
 	reg.MustRegister(r.callsTotal, r.errorsTotal, r.latency)
 	return r
 }
+
+// Add increments a counter metric. Recognised names: "ratelimit.call", "ratelimit.errors".
+func (p *PrometheusRecorder) Add(name string, value float64, tags map[string]string) {
+	switch name {
+	case "ratelimit.call":
+		p.callsTotal.With(prometheus.Labels{
+			"namespace": tags["namespace"], "status": tags["status"],
+		}).Add(value)
+	case "ratelimit.errors":
+		p.errorsTotal.With(prometheus.Labels{
+			"namespace": tags["namespace"], "type": tags["type"],
+		}).Add(value)
+	}
+}

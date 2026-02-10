@@ -25,10 +25,15 @@ func main() {
 		limiter.WithTimeout(100*time.Millisecond),
 		limiter.WithRecorder(rec),
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_ = tbLimiter
+	if err != nil { log.Fatal(err) }
 
+	swLimiter, err := limiter.NewSlidingWindowLimiter(client,
+		limiter.WithPrefix("demo:sw:"),
+		limiter.WithTimeout(100*time.Millisecond),
+		limiter.WithRecorder(rec),
+	)
+	if err != nil { log.Fatal(err) }
+
+	_ = tbLimiter; _ = swLimiter
 	log.Printf("Server starting (Redis: %s)", redisAddr)
 }

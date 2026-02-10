@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	limiter "github.com/erfderdfg/go-rate-limiter"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -13,6 +15,10 @@ func main() {
 		redisAddr = "localhost:6379"
 	}
 	client := redis.NewClient(&redis.Options{Addr: redisAddr})
-	_ = client
-	log.Printf("Redis: %s", redisAddr)
+
+	reg := prometheus.NewRegistry()
+	rec := limiter.NewPrometheusRecorder(reg)
+	_ = rec
+
+	log.Printf("Server starting (Redis: %s)", redisAddr)
 }

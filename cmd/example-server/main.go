@@ -17,6 +17,7 @@ func main() {
 	if redisAddr == "" {
 		redisAddr = "localhost:6379"
 	}
+
 	client := redis.NewClient(&redis.Options{Addr: redisAddr})
 
 	reg := prometheus.NewRegistry()
@@ -51,7 +52,21 @@ func main() {
 		fmt.Fprintln(w, "OK")
 	})
 
-	_ = swLimiter
+	http.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
+		id := limiter.Identity{Namespace: "ip", Key: r.RemoteAddr}
+		lim := limiter.Limit{Rate: 5, Period: time.Second, Burst: 5}
+		dec, err := swLimiter.Allow(r.Context(), id, lim)
+		if err != nil {
+			log.Printf("Limiter error: %v", err)
+		} else if !dec.Allow {
+			w.Header().Set("Retry-After", fmt.Sprintf("%.3f", dec.RetryAfter.Seconds()))
+			w.WriteHeader(http.StatusTooManyRequests)
+			fmt.Fprintln(w, "Rate limit exceeded")
+			return
+		}
+		fmt.Fprintln(w, "Authenticated")
+	})
+
 	log.Printf("Server listening on :8080 (Redis: %s)", redisAddr)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -34,6 +36,22 @@ func main() {
 	)
 	if err != nil { log.Fatal(err) }
 
-	_ = tbLimiter; _ = swLimiter
-	log.Printf("Server starting (Redis: %s)", redisAddr)
+	http.HandleFunc("/api/data", func(w http.ResponseWriter, r *http.Request) {
+		id := limiter.Identity{Namespace: "ip", Key: r.RemoteAddr}
+		lim := limiter.Limit{Rate: 100, Period: time.Second, Burst: 200}
+		dec, err := tbLimiter.Allow(r.Context(), id, lim)
+		if err != nil {
+			log.Printf("Limiter error: %v", err)
+		} else if !dec.Allow {
+			w.Header().Set("Retry-After", fmt.Sprintf("%.3f", dec.RetryAfter.Seconds()))
+			w.WriteHeader(http.StatusTooManyRequests)
+			fmt.Fprintln(w, "Rate limit exceeded")
+			return
+		}
+		fmt.Fprintln(w, "OK")
+	})
+
+	_ = swLimiter
+	log.Printf("Server listening on :8080 (Redis: %s)", redisAddr)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }

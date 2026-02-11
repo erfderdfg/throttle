@@ -9,6 +9,7 @@ import (
 
 	limiter "github.com/erfderdfg/go-rate-limiter"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -66,6 +67,8 @@ func main() {
 		}
 		fmt.Fprintln(w, "Authenticated")
 	})
+
+	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
 	log.Printf("Server listening on :8080 (Redis: %s)", redisAddr)
 	log.Fatal(http.ListenAndServe(":8080", nil))

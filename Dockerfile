@@ -5,3 +5,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/example-server
+
+# Run Stage
+FROM gcr.io/distroless/static-debian11
+COPY --from=builder /app/server /
+CMD ["/server"]

@@ -1,4 +1,4 @@
-module github.com/erfderdfg/go-rate-limiter
+module github.com/erfderdfg/throttle
 
 go 1.24.5
 

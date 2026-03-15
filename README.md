@@ -1,6 +1,6 @@
-# go-rate-limiter
+# Throttle
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/erfderdfg/go-rate-limiter)](https://goreportcard.com/report/github.com/erfderdfg/go-rate-limiter) [![CI](https://github.com/erfderdfg/go-rate-limiter/actions/workflows/ci.yml/badge.svg)](https://github.com/erfderdfg/go-rate-limiter/actions/workflows/ci.yml) [![GoDoc](https://godoc.org/github.com/erfderdfg/go-rate-limiter?status.svg)](https://pkg.go.dev/github.com/erfderdfg/go-rate-limiter) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Report Card](https://goreportcard.com/badge/github.com/erfderdfg/throttle)](https://goreportcard.com/report/github.com/erfderdfg/throttle) [![CI](https://github.com/erfderdfg/throttle/actions/workflows/ci.yml/badge.svg)](https://github.com/erfderdfg/throttle/actions/workflows/ci.yml) [![GoDoc](https://godoc.org/github.com/erfderdfg/throttle?status.svg)](https://pkg.go.dev/github.com/erfderdfg/throttle) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A Redis-backed, distributed token bucket rate limiter for Go.
 
@@ -58,19 +58,19 @@ This repo ships:
 ## Installation
 
 ```bash
-go get github.com/erfderdfg/go-rate-limiter
+go get github.com/erfderdfg/throttle
 ```
 
 Import the library package:
 
 ```go
-import "github.com/erfderdfg/go-rate-limiter"
+import "github.com/erfderdfg/throttle"
 ```
 
 If you prefer to be explicit about versions:
 
 ```bash
-go get github.com/erfderdfg/go-rate-limiter@latest
+go get github.com/erfderdfg/throttle@latest
 ```
 
 ## Quick start (Redis-backed)
